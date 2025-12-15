@@ -7,44 +7,40 @@ import ClassOverview from './components/ClassOverview';
 import AboutView from './components/AboutView';
 import AuthView from './components/AuthView';
 import { LayoutDashboard, Users, HelpCircle, GraduationCap, ArrowRight, Plus, FileText, X, Info, LogOut, User as UserIcon } from 'lucide-react';
+import { db } from './firebase'; // Import the Firestore instance
+import { collection, getDocs, doc, setDoc, addDoc, query, where } from 'firebase/firestore';
 
-// --- MOCK DATA GENERATOR ---
-const generateMockStudents = (): Student[] => {
-  const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Hannah', 'Ian', 'Jack'];
-  return names.map((name, i) => {
-    // Determine a "level" for the student to simulate realistic progress
-    // i=0 (Alice) is advanced, i=9 (Jack) is beginning
-    const level = 1 - (i * 0.1); 
-    
-    const phonicsMastery: Record<string, boolean> = {};
-    PHONICS_DATA.forEach((cat, catIdx) => {
-       cat.skills.forEach(skill => {
-          // Earlier categories have higher chance of being mastered based on student level
-          const difficulty = (catIdx + 1) * 0.2;
-          phonicsMastery[skill.id] = Math.random() < (level + 0.2 - difficulty); 
-       });
+// --- MOCK DATA GENERATOR (can be removed if not needed) ---
+
+const generateMockStudents = (): Omit<Student, 'id'>[] => {
+    const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Hannah', 'Ian', 'Jack'];
+    return names.map((name, i) => {
+      const level = 1 - (i * 0.1);
+      const phonicsMastery: Record<string, boolean> = {};
+      PHONICS_DATA.forEach((cat, catIdx) => {
+         cat.skills.forEach(skill => {
+            const difficulty = (catIdx + 1) * 0.2;
+            phonicsMastery[skill.id] = Math.random() < (level + 0.2 - difficulty);
+         });
+      });
+      const hfwMastery: Record<string, boolean> = {};
+      HFW_SETS.forEach((set, setIdx) => {
+          set.words.forEach(word => {
+              const difficulty = (setIdx + 1) * 0.15;
+              hfwMastery[`${set.id}_${word}`] = Math.random() < (level + 0.2 - difficulty);
+          });
+      });
+      const date = new Date();
+      date.setDate(date.getDate() - Math.floor(Math.random() * 30));
+      return {
+        name,
+        lastAssessmentDate: date.toISOString(),
+        phonicsMastery,
+        hfwMastery,
+        userId: '' // This will be set to the current user's ID
+      };
     });
-
-    const hfwMastery: Record<string, boolean> = {};
-    HFW_SETS.forEach((set, setIdx) => {
-        set.words.forEach(word => {
-            const difficulty = (setIdx + 1) * 0.15;
-            hfwMastery[`${set.id}_${word}`] = Math.random() < (level + 0.2 - difficulty);
-        });
-    });
-
-    const date = new Date();
-    date.setDate(date.getDate() - Math.floor(Math.random() * 30)); // assessed within last 30 days
-
-    return {
-      id: `student-${i}`,
-      name,
-      lastAssessmentDate: date.toISOString(),
-      phonicsMastery,
-      hfwMastery
-    };
-  });
-};
+  };
 
 const App: React.FC = () => {
   // Auth State
@@ -56,41 +52,64 @@ const App: React.FC = () => {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
 
   // 1. Check for active session on load
   useEffect(() => {
     const sessionUser = sessionStorage.getItem('pt_current_user');
     if (sessionUser) {
       setCurrentUser(JSON.parse(sessionUser));
+    } else {
+        setIsLoading(false);
     }
   }, []);
 
-  // 2. Load User Data when User Logged In
+  // 2. Load User Data from Firestore when User is Logged In
   useEffect(() => {
     if (currentUser) {
-      const dataKey = `pt_data_${currentUser.email}`;
-      const savedData = localStorage.getItem(dataKey);
-      
-      if (savedData) {
-        setStudents(JSON.parse(savedData));
-      } else {
-        // First time user: initialize with mock data for demo purposes
-        // In a real production app, this might start empty
-        const initialData = generateMockStudents();
-        setStudents(initialData);
-        localStorage.setItem(dataKey, JSON.stringify(initialData));
-      }
-      
-      // Reset view to dashboard
-      setCurrentView(AppView.DASHBOARD);
-      setSelectedStudentId(null);
+        const fetchData = async () => {
+            setIsLoading(true);
+            const studentsCollection = collection(db, 'students');
+            const q = query(studentsCollection, where("userId", "==", currentUser.uid));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                // First time user, let's add mock data
+                console.log("No students found, generating mock data...");
+                const mockStudents = generateMockStudents();
+                const studentPromises = mockStudents.map(studentData => {
+                    const studentWithUser = { ...studentData, userId: currentUser.uid };
+                    return addDoc(collection(db, 'students'), studentWithUser);
+                });
+                await Promise.all(studentPromises);
+                // Re-fetch after adding
+                const newSnapshot = await getDocs(q);
+                const studentsData = newSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
+                setStudents(studentsData);
+
+            } else {
+                const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
+                setStudents(studentsData);
+            }
+             // Reset view
+            setCurrentView(AppView.DASHBOARD);
+            setSelectedStudentId(null);
+            setIsLoading(false);
+        };
+
+        fetchData();
+    } else {
+        // Clear data when user logs out
+        setStudents([]);
+        setSelectedStudentId(null);
     }
   }, [currentUser]);
 
   // Determine current student object
-  // Safety check: ensure selectedStudentId exists in current students list
   const selectedStudent = students.find(s => s.id === selectedStudentId) || students[0];
 
+  // Auto-select first student if none is selected
   useEffect(() => {
     if(students.length > 0 && !selectedStudentId) {
         setSelectedStudentId(students[0].id);
@@ -107,59 +126,51 @@ const App: React.FC = () => {
   const handleLogout = () => {
     sessionStorage.removeItem('pt_current_user');
     setCurrentUser(null);
-    setStudents([]);
-    setSelectedStudentId(null);
   };
 
-  // Helper to persist data for current user
-  const saveUserData = (newStudents: Student[]) => {
-    setStudents(newStudents);
-    if (currentUser) {
-      localStorage.setItem(`pt_data_${currentUser.email}`, JSON.stringify(newStudents));
-    }
-  };
-
-  const handleUpdateStudent = (updatedStudent: Student) => {
+  const handleUpdateStudent = async (updatedStudent: Student) => {
+    if (!currentUser) return;
+    const studentRef = doc(db, 'students', updatedStudent.id);
+    await setDoc(studentRef, { ...updatedStudent, userId: currentUser.uid }, { merge: true }); // Use merge to avoid overwriting
     const newStudents = students.map(s => s.id === updatedStudent.id ? updatedStudent : s);
-    saveUserData(newStudents);
+    setStudents(newStudents);
     setCurrentView(AppView.DASHBOARD);
   };
 
-  const handleAddStudent = () => {
-    if (!newStudentName.trim()) return;
-    
-    const newStudent: Student = {
-        id: `student-${Date.now()}`,
+  const handleAddStudent = async () => {
+    if (!newStudentName.trim() || !currentUser) return;
+
+    const newStudentData = {
         name: newStudentName.trim(),
-        // Set date to past so they show up as priority
-        lastAssessmentDate: new Date(new Date().setDate(new Date().getDate() - 365)).toISOString(), 
+        lastAssessmentDate: new Date(new Date().setDate(new Date().getDate() - 365)).toISOString(),
         phonicsMastery: {},
-        hfwMastery: {}
+        hfwMastery: {},
+        userId: currentUser.uid,
     };
 
-    const newStudents = [...students, newStudent];
-    saveUserData(newStudents);
+    const docRef = await addDoc(collection(db, 'students'), newStudentData);
+    const newStudent = { id: docRef.id, ...newStudentData };
     
+    const newStudents = [...students, newStudent];
+    setStudents(newStudents);
+
     setSelectedStudentId(newStudent.id);
     setNewStudentName('');
     setIsAddStudentModalOpen(false);
-    setCurrentView(AppView.ASSESSMENT); // Immediately go to assess the new student
+    setCurrentView(AppView.ASSESSMENT);
   };
 
   // Find priority student (longest time since assessment)
   const priorityStudent = [...students].sort((a,b) => new Date(a.lastAssessmentDate).getTime() - new Date(b.lastAssessmentDate).getTime())[0];
 
-  // --- RENDER ---
 
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center text-gray-500">Loading Teacher Profile...</div>;
+  }
   if (!currentUser) {
     return <AuthView onLogin={handleLogin} />;
   }
 
-  // Loading state if students haven't initialized yet
-  if (students.length === 0 && !selectedStudent) return <div className="flex h-screen items-center justify-center text-gray-500">Initializing Profile...</div>;
-
-  // Fallback if somehow empty list is valid (e.g. user deleted all students)
-  // We need at least the UI shell
   const renderMainContent = () => {
      if (students.length === 0) {
         return (
@@ -169,7 +180,7 @@ const App: React.FC = () => {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">No students found</h2>
                 <p className="text-gray-500 mb-6 max-w-md">Your class list is empty. Add your first student to start tracking their phonics journey.</p>
-                <button 
+                <button
                     onClick={() => setIsAddStudentModalOpen(true)}
                     className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-lg flex items-center gap-2"
                 >
@@ -189,7 +200,7 @@ const App: React.FC = () => {
                             <p className="text-gray-500">Dashboard & Achievement Snapshot</p>
                         </div>
                         <div className="flex items-center gap-3">
-                             <select 
+                             <select
                                 className="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 value={selectedStudentId || ''}
                                 onChange={(e) => setSelectedStudentId(e.target.value)}
@@ -198,9 +209,9 @@ const App: React.FC = () => {
                              </select>
                         </div>
                     </div>
-                    
-                    <StudentSnapshot 
-                        student={selectedStudent} 
+
+                    <StudentSnapshot
+                        student={selectedStudent}
                         allStudents={students}
                         onAssess={() => setCurrentView(AppView.ASSESSMENT)}
                     />
@@ -209,8 +220,8 @@ const App: React.FC = () => {
 
             {currentView === AppView.ASSESSMENT && selectedStudent && (
                 <div className="max-w-6xl mx-auto h-full pb-10">
-                    <AssessmentInterface 
-                        student={selectedStudent} 
+                    <AssessmentInterface
+                        student={selectedStudent}
                         onSave={handleUpdateStudent}
                         onCancel={() => setCurrentView(AppView.DASHBOARD)}
                     />
@@ -223,8 +234,8 @@ const App: React.FC = () => {
                         <h2 className="text-3xl font-bold text-gray-800">Class Matrix</h2>
                         <p className="text-gray-500">Overview of all student achievements aligned to SATPIN.</p>
                     </div>
-                    <ClassOverview 
-                        students={students} 
+                    <ClassOverview
+                        students={students}
                         onSelectStudent={(id) => {
                             setSelectedStudentId(id);
                             setCurrentView(AppView.DASHBOARD);
@@ -242,7 +253,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-800 font-sans overflow-hidden">
-      
+
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm hidden md:flex shrink-0">
         <div className="p-6 border-b border-gray-100">
@@ -251,7 +262,7 @@ const App: React.FC = () => {
             </h1>
             <p className="text-xs text-gray-400 mt-1">Assessment & Monitoring</p>
         </div>
-        
+
         {/* User Profile Info */}
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center gap-3">
              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
@@ -264,41 +275,41 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            <button 
+            <button
                 onClick={() => setCurrentView(AppView.DASHBOARD)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${currentView === AppView.DASHBOARD ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
             >
                 <LayoutDashboard size={20} /> Dashboard
             </button>
-            <button 
+            <button
                 onClick={() => setCurrentView(AppView.CLASS_OVERVIEW)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${currentView === AppView.CLASS_OVERVIEW ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
             >
                 <Users size={20} /> Class Matrix
             </button>
-             <button 
+             <button
                 onClick={() => setCurrentView(AppView.ABOUT)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${currentView === AppView.ABOUT ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
             >
                 <Info size={20} /> About
             </button>
-            
+
             {/* Resources Section */}
             <div className="pt-6 px-4">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Teacher Resources</p>
                 <div className="space-y-3">
-                    <a 
-                        href="https://docs.google.com/presentation/d/1vrRJf9vE7uOIpofzAYTm8rdfZwzhRYnj/edit?usp=sharing&ouid=112539120221518128339&rtpof=true&sd=true" 
-                        target="_blank" 
+                    <a
+                        href="https://docs.google.com/presentation/d/1vrRJf9vE7uOIpofzAYTm8rdfZwzhRYnj/edit?usp=sharing&ouid=112539120221518128339&rtpof=true&sd=true"
+                        target="_blank"
                         rel="noreferrer"
                         className="flex items-start gap-2 text-sm text-gray-600 hover:text-indigo-600 group"
                     >
                         <FileText size={16} className="mt-0.5 group-hover:text-indigo-500" />
                         <span>Download Word Lists</span>
                     </a>
-                    <a 
-                        href="https://docs.google.com/presentation/d/1e758EAlGGEDwpM00d1RHXDyDBIahm2bJ/edit?usp=sharing&ouid=112539120221518128339&rtpof=true&sd=true" 
-                        target="_blank" 
+                    <a
+                        href="https://docs.google.com/presentation/d/1e758EAlGGEDwpM00d1RHXDyDBIahm2bJ/edit?usp=sharing&ouid=112539120221518128339&rtpof=true&sd=true"
+                        target="_blank"
                         rel="noreferrer"
                         className="flex items-start gap-2 text-sm text-gray-600 hover:text-indigo-600 group"
                     >
@@ -311,7 +322,7 @@ const App: React.FC = () => {
             <div className="pt-6 px-4">
                 <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Student Quick Pick</p>
-                    <button 
+                    <button
                         onClick={() => setIsAddStudentModalOpen(true)}
                         className="text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 p-1 rounded transition-colors"
                         title="Add New Student"
@@ -341,7 +352,7 @@ const App: React.FC = () => {
                  <div className="bg-indigo-600 rounded-lg p-4 text-white mb-2">
                     <p className="text-xs opacity-75 uppercase">Next to Assess</p>
                     <p className="font-bold text-lg mb-2">{priorityStudent.name}</p>
-                    <button 
+                    <button
                         onClick={() => {
                             setSelectedStudentId(priorityStudent.id);
                             setCurrentView(AppView.ASSESSMENT);
@@ -352,8 +363,8 @@ const App: React.FC = () => {
                     </button>
                 </div>
             )}
-            
-            <button 
+
+            <button
                 onClick={handleLogout}
                 className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
             >
@@ -375,7 +386,7 @@ const App: React.FC = () => {
 
         {/* Render Dynamic Content */}
         {renderMainContent()}
-        
+
         {/* Footer/Help Link */}
         <div className="absolute bottom-4 right-4 text-xs text-gray-400 bg-white/80 p-2 rounded backdrop-blur-sm z-10">
             <a href="https://youtu.be/Fz9DdXV-gFk" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-indigo-600">
@@ -389,7 +400,7 @@ const App: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
                     <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                         <h3 className="font-bold text-lg text-gray-800">Add New Student</h3>
-                        <button 
+                        <button
                             onClick={() => setIsAddStudentModalOpen(false)}
                             className="text-gray-400 hover:text-gray-600"
                         >
@@ -398,9 +409,9 @@ const App: React.FC = () => {
                     </div>
                     <div className="p-6">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Student Name</label>
-                        <input 
+                        <input
                             autoFocus
-                            type="text" 
+                            type="text"
                             value={newStudentName}
                             onChange={(e) => setNewStudentName(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleAddStudent()}
@@ -408,15 +419,15 @@ const App: React.FC = () => {
                             placeholder="e.g., Sarah Smith"
                         />
                         <p className="text-xs text-gray-500 mt-2">New students will be marked as "Needs Assessment" immediately.</p>
-                        
+
                         <div className="mt-6 flex gap-3 justify-end">
-                            <button 
+                            <button
                                 onClick={() => setIsAddStudentModalOpen(false)}
                                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
                             >
                                 Cancel
                             </button>
-                            <button 
+                            <button
                                 onClick={handleAddStudent}
                                 disabled={!newStudentName.trim()}
                                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
