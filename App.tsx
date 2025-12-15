@@ -7,12 +7,13 @@ import ClassOverview from './components/ClassOverview';
 import AboutView from './components/AboutView';
 import AuthView from './components/AuthView';
 import { LayoutDashboard, Users, HelpCircle, GraduationCap, ArrowRight, Plus, FileText, X, Info, LogOut, User as UserIcon } from 'lucide-react';
-import { db } from './firebase'; // Import the Firestore instance
+import { db, auth } from './firebase'; // Import the Firestore and Auth instances
 import { collection, getDocs, doc, setDoc, addDoc, query, where } from 'firebase/firestore';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 // --- MOCK DATA GENERATOR (can be removed if not needed) ---
 
-const generateMockStudents = (): Omit<Student, 'id'>[] => {
+const generateMockStudents = (): Omit<Student, 'id' | 'userId'>[] => {
     const names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank', 'Grace', 'Hannah', 'Ian', 'Jack'];
     return names.map((name, i) => {
       const level = 1 - (i * 0.1);
@@ -37,7 +38,6 @@ const generateMockStudents = (): Omit<Student, 'id'>[] => {
         lastAssessmentDate: date.toISOString(),
         phonicsMastery,
         hfwMastery,
-        userId: '' // This will be set to the current user's ID
       };
     });
   };
@@ -54,15 +54,22 @@ const App: React.FC = () => {
   const [newStudentName, setNewStudentName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-
-  // 1. Check for active session on load
+  // 1. Listen for Auth State Changes
   useEffect(() => {
-    const sessionUser = sessionStorage.getItem('pt_current_user');
-    if (sessionUser) {
-      setCurrentUser(JSON.parse(sessionUser));
-    } else {
+    const unsubscribe = onAuthStateChanged(auth, user => {
+        if (user) {
+            setCurrentUser({
+                uid: user.uid,
+                name: user.displayName || 'User',
+                email: user.email || '',
+            });
+        } else {
+            setCurrentUser(null);
+        }
         setIsLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // 2. Load User Data from Firestore when User is Logged In
@@ -118,14 +125,8 @@ const App: React.FC = () => {
 
   // --- HANDLERS ---
 
-  const handleLogin = (user: User) => {
-    sessionStorage.setItem('pt_current_user', JSON.stringify(user));
-    setCurrentUser(user);
-  };
-
   const handleLogout = () => {
-    sessionStorage.removeItem('pt_current_user');
-    setCurrentUser(null);
+    signOut(auth);
   };
 
   const handleUpdateStudent = async (updatedStudent: Student) => {
@@ -149,7 +150,7 @@ const App: React.FC = () => {
     };
 
     const docRef = await addDoc(collection(db, 'students'), newStudentData);
-    const newStudent = { id: docRef.id, ...newStudentData };
+    const newStudent = { id: docRef.id, ...newStudentData } as Student;
     
     const newStudents = [...students, newStudent];
     setStudents(newStudents);
@@ -168,7 +169,7 @@ const App: React.FC = () => {
     return <div className="flex h-screen items-center justify-center text-gray-500">Loading Teacher Profile...</div>;
   }
   if (!currentUser) {
-    return <AuthView onLogin={handleLogin} />;
+    return <AuthView />;
   }
 
   const renderMainContent = () => {

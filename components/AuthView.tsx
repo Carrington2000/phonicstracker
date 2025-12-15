@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
-import { User } from '../types';
 import { Mail, Lock, User as UserIcon, ArrowRight, GraduationCap, AlertCircle } from 'lucide-react';
+import { auth } from '../firebase';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 
-interface Props {
-  onLogin: (user: User) => void;
-}
-
-const AuthView: React.FC<Props> = ({ onLogin }) => {
+const AuthView: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -22,30 +19,15 @@ const AuthView: React.FC<Props> = ({ onLogin }) => {
       return;
     }
 
-    const usersStr = localStorage.getItem('pt_users');
-    const users = usersStr ? JSON.parse(usersStr) : {};
-
-    if (isRegistering) {
-      if (users[email]) {
-        setError('An account with this email already exists.');
-        return;
-      }
-      
-      // Register new user
-      const newUser = { name, email, password }; // Note: In a real app, never store passwords in plain text
-      users[email] = newUser;
-      localStorage.setItem('pt_users', JSON.stringify(users));
-      
-      // Auto login
-      onLogin({ name, email });
-    } else {
-      // Login
-      const user = users[email];
-      if (user && user.password === password) {
-        onLogin({ name: user.name, email: user.email });
-      } else {
-        setError('Invalid email or password.');
-      }
+    try {
+        if (isRegistering) {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(userCredential.user, { displayName: name });
+        } else {
+            await signInWithEmailAndPassword(auth, email, password);
+        }
+    } catch (error: any) {
+        setError(error.message);
     }
   };
 

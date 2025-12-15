@@ -16,9 +16,11 @@ export interface Student {
   lastAssessmentDate: string; // ISO date string
   phonicsMastery: Record<string, boolean>; // key is PhonicsSkill.id
   hfwMastery: Record<string, boolean>; // key is "set_word"
+  userId: string;
 }
 
 export interface User {
+  uid: string;
   name: string;
   email: string;
 }
