@@ -118,7 +118,8 @@ Avoid passing just IDs; fetch data upstream in App.tsx.
 
 Since PhonicsTrack is 100% local with no external dependencies:
 - Use `npm run build` to create optimized static bundle
-- Bundle can be deployed as a standalone web app, electron app, or PWA
+- Bundle can be deployed as a standalone web app, Electron app, or PWA
+- Electron packaging is supported using **Electron Forge** (see `electron-main.js` and scripts `electron:dev`/`make`)
 - No backend server required—just serve the static assets
-- Works offline immediately after loading in browser
+- Works offline immediately after loading in browser or Electron window
 
