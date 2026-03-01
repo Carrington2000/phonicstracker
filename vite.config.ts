@@ -7,6 +7,17 @@ export default defineConfig({
   base: './',  // ADD THIS — critical for Electron file:// paths
   build: {
     outDir: 'dist',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+      },
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
   resolve: {
     alias: {
