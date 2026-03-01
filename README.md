@@ -42,10 +42,10 @@ Designed for teachers, E.S, tutors, parents to assess, monitor and track progres
 3. **Detailed Export** - All students × all skills grid
 4. **Import Record** Class and Individual records can be imported
 
-### Download & Further Information
-https://carrington2000.github.io
-
 ### How to Install
-Simply download and run the **phonicstrack.exe** file to start. 
+Simply download and run the **phonicstrack.exe** file inside the Installer folder to start. 
+
+### Further Information
+https://carrington2000.github.io
 
 **Created:** Aaron Johnson | **Last Updated:** March 2026
