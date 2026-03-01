@@ -1,10 +1,14 @@
+![Alt text](sample/sample.png)
 
-# PhonicsTrack - Local Assessment Platform
 
-A 100% local, offline-capable reading assessment platform for elementary teachers to track student mastery of phonics skills and high-frequency words. All data is stored locally—no external APIs or internet connection required.
+
+
+# PhonicsTrack - Assessment Tracker
+
+A 100% local, offline-capable reading assessment platform for primary school teachers to track student mastery of phonics skills and high-frequency words. All data is stored locally. No external APIs or internet connection required.
 
 ## Curriculum
-- Features 35 Decodable sets of words following the common S/A/T/P/I/N sequence used by many popular commercial phonics products, including the Victorian Department of Education's own 'Phonics Plus' program. 
+- Features 35 sets of decodable words, printable if required, following the common S/A/T/P/I/N sequence used by many popular commercial phonics products, including the Victorian Department of Education's own 'Phonics Plus' program. 
 
 ## Core Features
 
