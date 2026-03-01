@@ -1,59 +1,63 @@
 import { Student, User } from './types';
 
-const STORAGE_KEY_USERS = 'phonicstrack_users';
+const STORAGE_KEY_PASSCODE = 'phonicstrack_passcode';
+const STORAGE_KEY_TEACHER_NAME = 'phonicstrack_teacher_name';
 const STORAGE_KEY_STUDENTS = 'phonicstrack_students';
 const STORAGE_KEY_CURRENT_USER = 'phonicstrack_current_user';
-
-export interface StoredUser {
-  uid: string;
-  name: string;
-  email: string;
-  password: string; // hashed in production, plain for MVP
-}
 
 // Simple in-memory store for current user (cleared on browser refresh)
 let currentUser: User | null = null;
 
 // Initialize stored data if needed
 const initializeStorage = () => {
-  if (!localStorage.getItem(STORAGE_KEY_USERS)) {
-    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify([]));
-  }
   if (!localStorage.getItem(STORAGE_KEY_STUDENTS)) {
     localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify([]));
   }
 };
 
 export const localStorageService = {
-  // Auth methods
-  register: (name: string, email: string, password: string): User => {
+  // Check if passcode has been set
+  isPasscodeSet: (): boolean => {
+    return localStorage.getItem(STORAGE_KEY_PASSCODE) !== null;
+  },
+
+  // Set passcode (first time use)
+  setPasscode: (name: string, passcode: string): User => {
     initializeStorage();
-    const users = JSON.parse(localStorage.getItem(STORAGE_KEY_USERS) || '[]') as StoredUser[];
     
-    if (users.some(u => u.email === email)) {
-      throw new Error('Email already registered');
+    if (localStorageService.isPasscodeSet()) {
+      throw new Error('Passcode already set');
     }
 
-    const uid = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const newUser: StoredUser = { uid, name, email, password };
-    users.push(newUser);
-    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+    if (!passcode || passcode.length < 4) {
+      throw new Error('Passcode must be at least 4 characters');
+    }
 
-    currentUser = { uid, name, email };
+    localStorage.setItem(STORAGE_KEY_PASSCODE, passcode);
+    localStorage.setItem(STORAGE_KEY_TEACHER_NAME, name);
+
+    const uid = `teacher_${Date.now()}`;
+    currentUser = { uid, name, isAuthenticated: true };
     localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentUser));
     return currentUser;
   },
 
-  login: (email: string, password: string): User => {
+  // Login with passcode
+  login: (passcode: string): User => {
     initializeStorage();
-    const users = JSON.parse(localStorage.getItem(STORAGE_KEY_USERS) || '[]') as StoredUser[];
-    const user = users.find(u => u.email === email);
-
-    if (!user || user.password !== password) {
-      throw new Error('Invalid email or password');
+    
+    if (!localStorageService.isPasscodeSet()) {
+      throw new Error('No passcode set yet');
     }
 
-    currentUser = { uid: user.uid, name: user.name, email: user.email };
+    const storedPasscode = localStorage.getItem(STORAGE_KEY_PASSCODE);
+    if (passcode !== storedPasscode) {
+      throw new Error('Incorrect passcode');
+    }
+
+    const name = localStorage.getItem(STORAGE_KEY_TEACHER_NAME) || 'Teacher';
+    const uid = `teacher_${Date.now()}`;
+    currentUser = { uid, name, isAuthenticated: true };
     localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentUser));
     return currentUser;
   },
@@ -76,6 +80,16 @@ export const localStorageService = {
       }
     }
     return null;
+  },
+
+  // Get teacher name
+  getTeacherName: (): string => {
+    return localStorage.getItem(STORAGE_KEY_TEACHER_NAME) || 'Teacher';
+  },
+
+  // Update teacher name
+  updateTeacherName: (name: string): void => {
+    localStorage.setItem(STORAGE_KEY_TEACHER_NAME, name);
   },
 
   // Student methods
@@ -109,6 +123,13 @@ export const localStorageService = {
     return student;
   },
 
+  deleteStudent: (studentId: string): void => {
+    initializeStorage();
+    const students = JSON.parse(localStorage.getItem(STORAGE_KEY_STUDENTS) || '[]') as Student[];
+    const filtered = students.filter(s => s.id !== studentId);
+    localStorage.setItem(STORAGE_KEY_STUDENTS, JSON.stringify(filtered));
+  },
+
   // Batch operations
   addMultipleStudents: (studentsData: Omit<Student, 'id'>[]): Student[] => {
     initializeStorage();
@@ -126,7 +147,8 @@ export const localStorageService = {
 
   // Clear all data (for dev/testing)
   clearAllData: (): void => {
-    localStorage.removeItem(STORAGE_KEY_USERS);
+    localStorage.removeItem(STORAGE_KEY_PASSCODE);
+    localStorage.removeItem(STORAGE_KEY_TEACHER_NAME);
     localStorage.removeItem(STORAGE_KEY_STUDENTS);
     localStorage.removeItem(STORAGE_KEY_CURRENT_USER);
     currentUser = null;

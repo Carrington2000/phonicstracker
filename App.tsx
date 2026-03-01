@@ -140,6 +140,18 @@ const App: React.FC = () => {
     setCurrentView(AppView.ASSESSMENT);
   };
 
+  const handleDeleteStudent = (studentId: string) => {
+    localStorageService.deleteStudent(studentId);
+    const newStudents = students.filter(s => s.id !== studentId);
+    setStudents(newStudents);
+    
+    // Switch to another student or dashboard
+    if (selectedStudentId === studentId) {
+      setSelectedStudentId(newStudents.length > 0 ? newStudents[0].id : null);
+      setCurrentView(AppView.DASHBOARD);
+    }
+  };
+
   // Find priority student (longest time since assessment)
   const priorityStudent = [...students].sort((a,b) => new Date(a.lastAssessmentDate).getTime() - new Date(b.lastAssessmentDate).getTime())[0];
 
@@ -194,6 +206,7 @@ const App: React.FC = () => {
                         student={selectedStudent}
                         allStudents={students}
                         onAssess={() => setCurrentView(AppView.ASSESSMENT)}
+                        onDelete={() => handleDeleteStudent(selectedStudent.id)}
                     />
                 </div>
             )}
@@ -220,6 +233,7 @@ const App: React.FC = () => {
                             setSelectedStudentId(id);
                             setCurrentView(AppView.DASHBOARD);
                         }}
+                        onDeleteStudent={handleDeleteStudent}
                     />
                 </div>
             )}
@@ -250,7 +264,7 @@ const App: React.FC = () => {
              </div>
              <div className="overflow-hidden">
                 <p className="text-sm font-bold text-gray-800 truncate">{currentUser.name}</p>
-                <p className="text-xs text-gray-500 truncate">{currentUser.email}</p>
+                <p className="text-xs text-gray-500">Passcode Protected</p>
              </div>
         </div>
 
@@ -312,16 +326,31 @@ const App: React.FC = () => {
                 </div>
                 <div className="space-y-1 max-h-40 overflow-y-auto">
                     {students.map(s => (
-                        <button
+                        <div
                             key={s.id}
-                            onClick={() => {
-                                setSelectedStudentId(s.id);
-                                setCurrentView(AppView.DASHBOARD);
-                            }}
-                            className={`w-full text-left px-3 py-2 text-sm rounded-md truncate ${selectedStudentId === s.id ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-500 hover:bg-gray-50'}`}
+                            className="flex items-center group"
                         >
-                            {s.name}
-                        </button>
+                            <button
+                                onClick={() => {
+                                    setSelectedStudentId(s.id);
+                                    setCurrentView(AppView.DASHBOARD);
+                                }}
+                                className={`flex-1 text-left px-3 py-2 text-sm rounded-md truncate transition-colors ${selectedStudentId === s.id ? 'bg-gray-100 text-gray-900 font-medium' : 'text-gray-500 hover:bg-gray-50'}`}
+                            >
+                                {s.name}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (confirm(`Delete ${s.name}?`)) {
+                                        handleDeleteStudent(s.id);
+                                    }
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-600 transition-all hover:bg-red-50 rounded"
+                                title="Delete student"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
                     ))}
                 </div>
             </div>

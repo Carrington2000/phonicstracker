@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Mail, Lock, User as UserIcon, ArrowRight, GraduationCap, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, User as UserIcon, ArrowRight, GraduationCap, AlertCircle } from 'lucide-react';
 import { localStorageService } from '../localStorageService';
 
 interface AuthViewProps {
@@ -7,39 +7,78 @@ interface AuthViewProps {
 }
 
 const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [isSetupMode, setIsSetupMode] = useState(false);
+  const [teacherName, setTeacherName] = useState('');
+  const [passcode, setPasscode] = useState('');
+  const [passcodeConfirm, setPasscodeConfirm] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check if passcode is already set
+  useEffect(() => {
+    const hasPasscode = localStorageService.isPasscodeSet();
+    setIsSetupMode(!hasPasscode);
+    setLoading(false);
+  }, []);
+
+  const handleSetupSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!email || !password || (isRegistering && !name)) {
-      setError('Please fill in all fields');
+    if (!teacherName.trim()) {
+      setError('Please enter your name');
+      return;
+    }
+
+    if (!passcode) {
+      setError('Please enter a passcode');
+      return;
+    }
+
+    if (passcode.length < 4) {
+      setError('Passcode must be at least 4 characters');
+      return;
+    }
+
+    if (passcode !== passcodeConfirm) {
+      setError('Passcodes do not match');
       return;
     }
 
     try {
-        if (isRegistering) {
-            localStorageService.register(name, email, password);
-        } else {
-            localStorageService.login(email, password);
-        }
-        // Trigger page refresh to pick up new auth state
-        window.location.reload();
+      localStorageService.setPasscode(teacherName.trim(), passcode);
+      window.location.reload();
     } catch (error: any) {
-        setError(error.message);
+      setError(error.message);
     }
   };
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!passcode) {
+      setError('Please enter your passcode');
+      return;
+    }
+
+    try {
+      localStorageService.login(passcode);
+      window.location.reload();
+    } catch (error: any) {
+      setError(error.message);
+    }
+  };
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center text-gray-500">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4">
       <div className="mb-8 text-center">
-         <h1 className="text-4xl font-bold text-indigo-700 flex items-center justify-center gap-3">
-            <GraduationCap size={48} /> Phonics<span className="text-gray-800">Track</span>
+        <h1 className="text-4xl font-bold text-indigo-700 flex items-center justify-center gap-3">
+          <GraduationCap size={48} /> Phonics<span className="text-gray-800">Track</span>
         </h1>
         <p className="text-gray-500 mt-2 text-lg">Student Achievement Monitor</p>
       </div>
@@ -47,7 +86,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
         <div className="p-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            {isRegistering ? 'Create Teacher Profile' : 'Welcome Back'}
+            {isSetupMode ? 'Welcome! Set Your Passcode' : 'Enter Passcode'}
           </h2>
 
           {error && (
@@ -56,79 +95,90 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegistering && (
+          {isSetupMode ? (
+            // Setup Mode - First Time
+            <form onSubmit={handleSetupSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 block">Full Name</label>
+                <label className="text-sm font-medium text-gray-700 block">Your Name</label>
                 <div className="relative">
                   <UserIcon className="absolute left-3 top-3 text-gray-400" size={18} />
                   <input
                     type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={teacherName}
+                    onChange={(e) => setTeacherName(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     placeholder="e.g. Sarah Smith"
+                    autoFocus
                   />
                 </div>
               </div>
-            )}
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 block">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                  placeholder="name@school.edu"
-                />
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 block">Create Passcode</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+                  <input
+                    type="password"
+                    value={passcode}
+                    onChange={(e) => setPasscode(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="4+ characters"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700 block">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                  placeholder="••••••••"
-                />
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 block">Confirm Passcode</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+                  <input
+                    type="password"
+                    value={passcodeConfirm}
+                    onChange={(e) => setPasscodeConfirm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSetupSubmit(e as any)}
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Confirm passcode"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">You'll use this passcode each time you sign in.</p>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 mt-6 shadow-md"
-            >
-              {isRegistering ? 'Create Profile' : 'Sign In'} <ArrowRight size={18} />
-            </button>
-          </form>
-        </div>
-        
-        <div className="bg-gray-50 p-6 text-center border-t border-gray-100">
-          <p className="text-gray-600 text-sm">
-            {isRegistering ? "Already have a profile?" : "New to PhonicsTrack?"}
-            <button
-              onClick={() => {
-                setIsRegistering(!isRegistering);
-                setError('');
-              }}
-              className="text-indigo-600 font-bold ml-2 hover:underline focus:outline-none"
-            >
-              {isRegistering ? 'Sign In' : 'Register Now'}
-            </button>
-          </p>
+              <button
+                type="submit"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 mt-6 shadow-md"
+              >
+                Set Passcode <ArrowRight size={18} />
+              </button>
+            </form>
+          ) : (
+            // Login Mode - Passcode Already Set
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 block">Passcode</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+                  <input
+                    type="password"
+                    value={passcode}
+                    onChange={(e) => setPasscode(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLoginSubmit(e as any)}
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-lg tracking-widest"
+                    placeholder="Enter passcode"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 mt-6 shadow-md"
+              >
+                Sign In <ArrowRight size={18} />
+              </button>
+            </form>
+          )}
         </div>
       </div>
-      
-      <p className="mt-8 text-xs text-gray-400 max-w-sm text-center">
-        Note: This is a demo application. User data is stored locally on your device's browser storage.
-      </p>
     </div>
   );
 };

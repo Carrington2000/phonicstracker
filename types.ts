@@ -22,7 +22,7 @@ export interface Student {
 export interface User {
   uid: string;
   name: string;
-  email: string;
+  isAuthenticated: boolean;
 }
 
 export enum AppView {

@@ -1,16 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { Student, PhonicsCategory } from '../types';
 import { PHONICS_DATA, ALL_SKILLS, HFW_SETS } from '../constants';
-import { TrendingUp, AlertCircle, BookOpen, Users } from 'lucide-react';
+import { TrendingUp, AlertCircle, BookOpen, Users, Trash2, Download } from 'lucide-react';
+import { exportService } from '../exportService';
 
 interface Props {
   student: Student;
   allStudents: Student[];
   onAssess: () => void;
+  onDelete?: () => void;
 }
 
-const StudentSnapshot: React.FC<Props> = ({ student, allStudents, onAssess }) => {
+const StudentSnapshot: React.FC<Props> = ({ student, allStudents, onAssess, onDelete }) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete();
+      setShowDeleteConfirm(false);
+    }
+  };
   
   // Calculate Progress per category
   const chartData = PHONICS_DATA.map(category => {
@@ -86,7 +96,28 @@ const StudentSnapshot: React.FC<Props> = ({ student, allStudents, onAssess }) =>
   const isPriority = daysSince > 14;
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <>
+    <div className="space-y-6 animate-fadeIn relative">
+      {/* Action Buttons */}
+      <div className="absolute top-0 right-0 flex gap-2">
+        <button
+          onClick={() => exportService.exportAndDownloadStudent(student)}
+          className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+          title="Export to CSV"
+        >
+          <Download size={18} />
+        </button>
+        {onDelete && (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            title="Delete student"
+          >
+            <Trash2 size={18} />
+          </button>
+        )}
+      </div>
+
       {/* Header Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
@@ -207,6 +238,35 @@ const StudentSnapshot: React.FC<Props> = ({ student, allStudents, onAssess }) =>
         </div>
       </div>
     </div>
+
+    {/* Delete Confirmation Dialog */}
+    {showDeleteConfirm && (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fadeIn">
+        <div className="bg-white rounded-xl shadow-xl max-w-sm overflow-hidden">
+          <div className="p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Delete Student?</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to remove <strong>{student.name}</strong> from your class list? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2"
+              >
+                <Trash2 size={16} /> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
