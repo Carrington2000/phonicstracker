@@ -14,6 +14,7 @@ dist_electron
 build
 out
 *.local
+firebase.ts
 
 # Editor directories and files
 .vscode/*
