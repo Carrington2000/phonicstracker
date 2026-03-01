@@ -43,9 +43,9 @@ Designed for teachers, E.S, tutors, parents to assess, monitor and track progres
 4. **Import Record** Class and Individual records can be imported
 
 ### How to Install
-Simply download and run the **phonicstrack.exe** file inside the Installer folder to start. 
+Simply download and run the **phonics.track.exe** file on the right-hand side under 'Releases'.  
 
 ### Further Information
-https://carrington2000.github.io
+https://carrington2000.github.io/phonicsplusapp/
 
 **Created:** Aaron Johnson | **Last Updated:** March 2026
