@@ -25,23 +25,4 @@ A 100% local, offline-capable reading assessment platform for elementary teacher
 
 ## Bundled Teacher Resources
 
-- **Local PDFs:** This project includes two placeholder PDF assets in the `public/` folder: `word-lists.pdf` and `flashcards.pdf`.
-- **Replace with real files:** To use your official Word Lists and Flashcards, replace the placeholder files in `public/word-lists.pdf` and `public/flashcards.pdf` with the real PDFs (keep the same filenames).
-
-```
-
-
-## Prerequisites
-- Node.js (v18+) for development only; end users of the packaged desktop app need nothing installed.
-
-1. Install dependencies:
-   ```
-   npm install
-   ```
-
-2. Run the app:
-   ```
-   npm run dev
-   ```
-
-3. Open http://localhost:3000 in your browser
+- **Local PDFs:** This project includes two PDF assets in the `public/` folder: `word-lists.pdf` and `flashcards.pdf`.
