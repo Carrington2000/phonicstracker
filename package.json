@@ -2,6 +2,8 @@
   "name": "phonicstrack",
   "private": true,
   "version": "0.0.0",
+  "description": "A phonics tracking application",
+  "author": "Aaron Johnson",
   "type": "module",
   "main": "electron-main.js",
   "scripts": {
@@ -10,25 +12,28 @@
     "preview": "vite preview",
     "electron:dev": "npm run dev & electron-forge start",
     "make": "electron-forge make",
-    "start": "electron-forge start"
+    "start": "electron-forge start",
+    "package": "electron-forge package"
   },
   "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
     "lucide-react": "^0.561.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "recharts": "^3.5.1"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^6.4.2",
+    "@electron-forge/maker-deb": "^6.4.2",
+    "@electron-forge/maker-rpm": "^6.4.2",
+    "@electron-forge/maker-squirrel": "^6.4.2",
+    "@electron-forge/maker-zip": "^6.4.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^6.4.2",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0",
     "electron": "^26.1.0",
-    "@electron-forge/cli": "^6.0.0",
-    "@electron-forge/maker-squirrel": "^6.0.0",
-    "@electron-forge/maker-zip": "^6.0.0",
-    "@electron-forge/maker-deb": "^6.0.0",
-    "@electron-forge/maker-rpm": "^6.0.0"
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
   },
   "config": {
     "forge": {
@@ -40,7 +45,9 @@
         },
         {
           "name": "@electron-forge/maker-zip",
-          "platforms": ["darwin"]
+          "platforms": [
+            "darwin"
+          ]
         },
         {
           "name": "@electron-forge/maker-deb",
