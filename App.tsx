@@ -7,9 +7,7 @@ import ClassOverview from './components/ClassOverview';
 import AboutView from './components/AboutView';
 import AuthView from './components/AuthView';
 import { LayoutDashboard, Users, HelpCircle, GraduationCap, ArrowRight, Plus, FileText, X, Info, LogOut, User as UserIcon } from 'lucide-react';
-import { db, auth } from './firebase'; // Import the Firestore and Auth instances
-import { collection, getDocs, doc, setDoc, addDoc, query, where } from 'firebase/firestore';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { localStorageService } from './localStorageService';
 
 // --- MOCK DATA GENERATOR (can be removed if not needed) ---
 
@@ -54,50 +52,32 @@ const App: React.FC = () => {
   const [newStudentName, setNewStudentName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Listen for Auth State Changes
+  // 1. Check for Existing User Session on Mount
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, user => {
-        if (user) {
-            setCurrentUser({
-                uid: user.uid,
-                name: user.displayName || 'User',
-                email: user.email || '',
-            });
-        } else {
-            setCurrentUser(null);
-        }
-        setIsLoading(false);
-    });
-
-    return () => unsubscribe();
+    const user = localStorageService.getCurrentUser();
+    setCurrentUser(user);
+    setIsLoading(false);
   }, []);
 
-  // 2. Load User Data from Firestore when User is Logged In
+  // 2. Load User Data from Local Storage when User is Logged In
   useEffect(() => {
     if (currentUser) {
-        const fetchData = async () => {
+        const fetchData = () => {
             setIsLoading(true);
-            const studentsCollection = collection(db, 'students');
-            const q = query(studentsCollection, where("userId", "==", currentUser.uid));
-            const querySnapshot = await getDocs(q);
+            const userStudents = localStorageService.getStudentsByUserId(currentUser.uid);
 
-            if (querySnapshot.empty) {
+            if (userStudents.length === 0) {
                 // First time user, let's add mock data
                 console.log("No students found, generating mock data...");
                 const mockStudents = generateMockStudents();
-                const studentPromises = mockStudents.map(studentData => {
-                    const studentWithUser = { ...studentData, userId: currentUser.uid };
-                    return addDoc(collection(db, 'students'), studentWithUser);
-                });
-                await Promise.all(studentPromises);
+                const studentsWithUser = mockStudents.map(s => ({ ...s, userId: currentUser.uid }));
+                localStorageService.addMultipleStudents(studentsWithUser);
+                
                 // Re-fetch after adding
-                const newSnapshot = await getDocs(q);
-                const studentsData = newSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
-                setStudents(studentsData);
-
+                const newStudents = localStorageService.getStudentsByUserId(currentUser.uid);
+                setStudents(newStudents);
             } else {
-                const studentsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student));
-                setStudents(studentsData);
+                setStudents(userStudents);
             }
              // Reset view
             setCurrentView(AppView.DASHBOARD);
@@ -126,19 +106,19 @@ const App: React.FC = () => {
   // --- HANDLERS ---
 
   const handleLogout = () => {
-    signOut(auth);
+    localStorageService.logout();
+    setCurrentUser(null);
   };
 
-  const handleUpdateStudent = async (updatedStudent: Student) => {
+  const handleUpdateStudent = (updatedStudent: Student) => {
     if (!currentUser) return;
-    const studentRef = doc(db, 'students', updatedStudent.id);
-    await setDoc(studentRef, { ...updatedStudent, userId: currentUser.uid }, { merge: true }); // Use merge to avoid overwriting
+    localStorageService.updateStudent(updatedStudent);
     const newStudents = students.map(s => s.id === updatedStudent.id ? updatedStudent : s);
     setStudents(newStudents);
     setCurrentView(AppView.DASHBOARD);
   };
 
-  const handleAddStudent = async () => {
+  const handleAddStudent = () => {
     if (!newStudentName.trim() || !currentUser) return;
 
     const newStudentData = {
@@ -149,8 +129,7 @@ const App: React.FC = () => {
         userId: currentUser.uid,
     };
 
-    const docRef = await addDoc(collection(db, 'students'), newStudentData);
-    const newStudent = { id: docRef.id, ...newStudentData } as Student;
+    const newStudent = localStorageService.addStudent(newStudentData);
     
     const newStudents = [...students, newStudent];
     setStudents(newStudents);

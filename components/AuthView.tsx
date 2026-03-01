@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Mail, Lock, User as UserIcon, ArrowRight, GraduationCap, AlertCircle } from 'lucide-react';
-import { auth } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { localStorageService } from '../localStorageService';
 
-const AuthView: React.FC = () => {
+interface AuthViewProps {
+  onAuthSuccess?: () => void;
+}
+
+const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -21,11 +24,12 @@ const AuthView: React.FC = () => {
 
     try {
         if (isRegistering) {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(userCredential.user, { displayName: name });
+            localStorageService.register(name, email, password);
         } else {
-            await signInWithEmailAndPassword(auth, email, password);
+            localStorageService.login(email, password);
         }
+        // Trigger page refresh to pick up new auth state
+        window.location.reload();
     } catch (error: any) {
         setError(error.message);
     }

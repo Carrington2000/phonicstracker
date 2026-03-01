@@ -2,22 +2,53 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+```markdown
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-This contains everything you need to run your app locally.
+# PhonicsTrack - Local Assessment Platform
 
-View your app in AI Studio: https://ai.studio/apps/drive/14JDulE3zyybm2GbC0oqZvHBHu_qkMkIc
+A 100% local, offline-capable reading assessment platform for elementary teachers to track student mastery of phonics skills and high-frequency words. All data is stored locally in browser storage—no external APIs or internet connection required.
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:**  Node.js (v18+)
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```
+   npm install
+   ```
 
+2. Run the app:
+   ```
+   npm run dev
+   ```
 
-   TEST PUSH
+3. Open http://localhost:3000 in your browser
+
+## Data Storage
+
+- **Local Only**: All student data and teacher profiles are stored in browser LocalStorage
+- **No Cloud Sync**: Data never leaves your device
+- **No Internet Required**: Works completely offline after initial setup
+- **Browser Specific**: Each browser/device maintains separate data
+
+## Building for Distribution
+
+```
+npm run build
+```
+
+This creates a production-optimized build ready for deployment as a standalone application.
+
+## Features
+
+- ✅ Teacher login/registration (local storage)
+- ✅ Multi-student tracking
+- ✅ Phonics skills assessment
+- ✅ High-frequency words tracking
+- ✅ Class overview reports
+- ✅ 100% offline capable
+- ✅ Zero external dependencies
+```
