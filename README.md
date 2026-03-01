@@ -17,7 +17,6 @@ Designed for teachers, E.S, tutors, parents to assess, monitor and track progres
 
 ## Core Features
 
-- ✅ **Passcode-only authentication** (no email/password needed)
 - ✅ **Multi-student tracking** per teacher
 - ✅ **Phonics skills assessment** (SATPIN through Long Vowels)
 - ✅ **Sight words (HFW)** tracking
@@ -27,7 +26,6 @@ Designed for teachers, E.S, tutors, parents to assess, monitor and track progres
 - ✅ **Remove/delete students** from class list
 - ✅ **100% offline capable** 
 - ✅ **Bundled PDF resources** (Word Lists & Flashcards)
-- ✅ Zero external dependencies
 
 ## Data Storage
 - **All data stored locally** in browser cache (~5-10 MB available)
@@ -43,17 +41,6 @@ Designed for teachers, E.S, tutors, parents to assess, monitor and track progres
 2. **Class Summary** - One row per student with mastery %
 3. **Detailed Export** - All students × all skills grid
 4. **Import Record** Class and Individual records can be imported
-
-## Authentication
-
-### First Use: Set Passcode
-1. Enter your name
-2. Create 4+ character passcode
-3. Create backup security question
-3. Confirm → Access granted
-
-### Regular Login
-Simply enter your passcode.
 
 ### Download & Further Information
 https://carrington2000.github.io

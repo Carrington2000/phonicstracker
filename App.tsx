@@ -5,7 +5,6 @@ import StudentSnapshot from './components/StudentSnapshot';
 import AssessmentInterface from './components/AssessmentInterface';
 import ClassOverview from './components/ClassOverview';
 import AboutView from './components/AboutView';
-import AuthView from './components/AuthView';
 import { LayoutDashboard, Users, GraduationCap, ArrowRight, Plus, FileText, X, Info, LogOut, User as UserIcon } from 'lucide-react';
 import { localStorageService } from './localStorageService';
 import ImportExport from './components/ImportExport';
@@ -54,46 +53,35 @@ const App: React.FC = () => {
   const [newStudentName, setNewStudentName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Check for Existing User Session on Mount
-  useEffect(() => {
-    const user = localStorageService.getCurrentUser();
-    setCurrentUser(user);
-    setIsLoading(false);
-  }, []);
+    // 1. Initialize local-only user and start with empty students
+    useEffect(() => {
+        // remove any stored students so app starts empty per request
+        localStorageService.clearStudents();
 
-  // 2. Load User Data from Local Storage when User is Logged In
-  useEffect(() => {
-    if (currentUser) {
-        const fetchData = () => {
+        const name = localStorageService.getTeacherName() || 'Teacher';
+        const uid = 'teacher_local';
+        const userObj = { uid, name, isAuthenticated: true } as any;
+
+        // persist current user so other helpers (imports) can read it
+        localStorage.setItem('phonicstrack_current_user', JSON.stringify(userObj));
+        setCurrentUser(userObj);
+        setIsLoading(false);
+    }, []);
+
+    // 2. Load User Data from Local Storage when User is set
+    useEffect(() => {
+        if (currentUser) {
             setIsLoading(true);
             const userStudents = localStorageService.getStudentsByUserId(currentUser.uid);
-
-            if (userStudents.length === 0) {
-                // First time user, let's add mock data
-                console.log("No students found, generating mock data...");
-                const mockStudents = generateMockStudents();
-                const studentsWithUser = mockStudents.map(s => ({ ...s, userId: currentUser.uid }));
-                localStorageService.addMultipleStudents(studentsWithUser);
-                
-                // Re-fetch after adding
-                const newStudents = localStorageService.getStudentsByUserId(currentUser.uid);
-                setStudents(newStudents);
-            } else {
-                setStudents(userStudents);
-            }
-             // Reset view
+            setStudents(userStudents);
             setCurrentView(AppView.DASHBOARD);
             setSelectedStudentId(null);
             setIsLoading(false);
-        };
-
-        fetchData();
-    } else {
-        // Clear data when user logs out
-        setStudents([]);
-        setSelectedStudentId(null);
-    }
-  }, [currentUser]);
+        } else {
+            setStudents([]);
+            setSelectedStudentId(null);
+        }
+    }, [currentUser]);
 
   // Determine current student object
   const selectedStudent = students.find(s => s.id === selectedStudentId) || students[0];
@@ -272,16 +260,7 @@ const App: React.FC = () => {
             <p className="text-xs text-gray-400 mt-1">Assessment & Monitoring</p>
         </div>
 
-        {/* User Profile Info */}
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center gap-3">
-             <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-                {currentUser.name.charAt(0)}
-             </div>
-             <div className="overflow-hidden">
-                <p className="text-sm font-bold text-gray-800 truncate">{currentUser.name}</p>
-                <p className="text-xs text-gray-500">Passcode Protected</p>
-             </div>
-        </div>
+
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             <button
@@ -390,13 +369,6 @@ const App: React.FC = () => {
                     </button>
                 </div>
             )}
-
-            <button
-                onClick={handleLogout}
-                className="flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
-            >
-                <LogOut size={18} /> Sign Out
-            </button>
         </div>
       </aside>
 
