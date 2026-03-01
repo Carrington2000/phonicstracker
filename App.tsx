@@ -6,7 +6,7 @@ import AssessmentInterface from './components/AssessmentInterface';
 import ClassOverview from './components/ClassOverview';
 import AboutView from './components/AboutView';
 import AuthView from './components/AuthView';
-import { LayoutDashboard, Users, HelpCircle, GraduationCap, ArrowRight, Plus, FileText, X, Info, LogOut, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, Users, GraduationCap, ArrowRight, Plus, FileText, X, Info, LogOut, User as UserIcon } from 'lucide-react';
 import { localStorageService } from './localStorageService';
 import ImportExport from './components/ImportExport';
 
@@ -342,7 +342,7 @@ const App: React.FC = () => {
                         <Plus size={16} />
                     </button>
                 </div>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
+                <div className="space-y-1 max-h-[60vh] overflow-y-auto">
                     {students.map(s => (
                         <div
                             key={s.id}
@@ -414,12 +414,7 @@ const App: React.FC = () => {
         {/* Render Dynamic Content */}
         {renderMainContent()}
 
-        {/* Footer/Help Link */}
-        <div className="absolute bottom-4 right-4 text-xs text-gray-400 bg-white/80 p-2 rounded backdrop-blur-sm z-10">
-            <a href="https://youtu.be/Fz9DdXV-gFk" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-indigo-600">
-                <HelpCircle size={12} /> Help / Tutorials
-            </a>
-        </div>
+        {/* Footer/Help Link removed per request */}
 
         {/* Add Student Modal */}
         {isAddStudentModalOpen && (

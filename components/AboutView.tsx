@@ -23,25 +23,6 @@ const AboutView: React.FC = () => {
             <p>
                 Aligns with 'Phonics Plus' from DET (or any SATPIN sequenced S.S.P.P).
             </p>
-            
-            <h4 className="font-bold text-gray-900 pt-4 text-lg">What can you do with this tool?</h4>
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                {[
-                    "Instantly see a clear snapshot of each student’s decoding knowledge, saving time on assessment.",
-                    "Confidently track individual progress to inform timely teaching decisions.",
-                    "Stay effortlessly updated on priority students without extra admin work.",
-                    "Pinpoint each learner’s strengths and growth areas to guide targeted instruction.",
-                    "Match students with the most appropriate decodable readers to accelerate progress.",
-                    "Spot gaps early and act quickly with focused intervention strategies.",
-                    "Group or pair students at similar achievement levels to maximise peer learning opportunities.",
-                    "Ensure students have mastered key pre-code high-frequency words for a strong start in reading."
-                ].map((item, i) => (
-                    <li key={i} className="flex items-start gap-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <CheckCircle size={18} className="text-green-500 mt-0.5 shrink-0" />
-                        <span className="text-sm">{item}</span>
-                    </li>
-                ))}
-            </ul>
         </div>
       </div>
 
@@ -54,9 +35,9 @@ const AboutView: React.FC = () => {
         </div>
         <div className="p-6 space-y-4 text-gray-700 leading-relaxed">
             <p>I am a teacher in the Victorian public education system.</p>
-            <p>I enjoy developing tools that empower teachers to achieve greater impact by delivering actionable data while lightening workload.</p>
-            <p>With 15 years experience, I’ve taught across every primary grade level and have a range of leadership responsibilities.</p>
-            <p>As an employee of DET, they maintain the intellectual property to my work, which I share freely to support fellow educators.</p>
+            <p>I make digital tools that empower teachers to achieve greater impact using actionable data and lightening workload.</p>
+            <p>I have taught across every primary grade level over 15 years and have experience in a range of leadership roles.</p>
+            <p>As an employee of Victoria DET, they maintain the intellectual property to my work, which I choose to share freely to support fellow educators.</p>
             
             <div className="bg-blue-50 p-5 rounded-lg border border-blue-100 mt-4 text-blue-900">
                 <p className="italic">
