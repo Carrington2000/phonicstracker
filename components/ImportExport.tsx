@@ -5,11 +5,12 @@ import { exportService } from '../exportService';
 
 interface Props {
   students: Student[];
+  selectedStudent?: Student | null;
   onClose: () => void;
   onImported?: (imported: Student[] | Student) => void;
 }
 
-const ImportExport: React.FC<Props> = ({ students, onClose, onImported }) => {
+const ImportExport: React.FC<Props> = ({ students, selectedStudent, onClose, onImported }) => {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [message, setMessage] = useState<string>('');
 
@@ -22,8 +23,9 @@ const ImportExport: React.FC<Props> = ({ students, onClose, onImported }) => {
   };
 
   const handleExportStudentJSON = () => {
-    if (!students[0]) return;
-    exportService.exportAndDownloadStudentJSON(students[0]);
+    const student = selectedStudent || students[0];
+    if (!student) return;
+    exportService.exportAndDownloadStudentJSON(student);
   };
 
   const handleExportSummary = () => {
@@ -31,8 +33,9 @@ const ImportExport: React.FC<Props> = ({ students, onClose, onImported }) => {
   };
 
   const handleExportStudent = () => {
-    if (!students[0]) return;
-    exportService.exportAndDownloadStudent(students[0]);
+    const student = selectedStudent || students[0];
+    if (!student) return;
+    exportService.exportAndDownloadStudent(student);
   };
 
   const handleImport = (asClass: boolean) => {
@@ -84,8 +87,8 @@ const ImportExport: React.FC<Props> = ({ students, onClose, onImported }) => {
             <button onClick={handleExportSummary} className="flex items-center gap-2 px-4 py-3 bg-indigo-500 text-white rounded-lg">
               <FileText /> Export Class Summary (CSV)
             </button>
-            <button onClick={handleExportStudent} className="flex items-center gap-2 px-4 py-3 bg-indigo-400 text-white rounded-lg">
-              <Download /> Export First Student (CSV)
+            <button onClick={handleExportStudent} className="flex items-center gap-2 px-4 py-3 bg-indigo-400 text-white rounded-lg" disabled={!selectedStudent && students.length === 0}>
+              <Download /> Export Selected Student (CSV)
             </button>
           </div>
 
@@ -93,8 +96,8 @@ const ImportExport: React.FC<Props> = ({ students, onClose, onImported }) => {
             <button onClick={handleExportAllJSON} className="flex items-center gap-2 px-4 py-3 bg-sky-600 text-white rounded-lg">
               <Download /> Export All Students (JSON)
             </button>
-            <button onClick={handleExportStudentJSON} className="flex items-center gap-2 px-4 py-3 bg-sky-500 text-white rounded-lg">
-              <Download /> Export First Student (JSON)
+            <button onClick={handleExportStudentJSON} className="flex items-center gap-2 px-4 py-3 bg-sky-500 text-white rounded-lg" disabled={!selectedStudent && students.length === 0}>
+              <Download /> Export Selected Student (JSON)
             </button>
             <div className="flex items-center gap-2 px-4 py-3 text-sm text-gray-600">JSON exports are exact student objects suitable for re-import.</div>
           </div>

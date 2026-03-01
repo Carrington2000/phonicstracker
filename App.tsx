@@ -471,6 +471,7 @@ const App: React.FC = () => {
                 {isImportExportOpen && (
                     <ImportExport
                         students={students}
+                        selectedStudent={selectedStudent}
                         onClose={() => setIsImportExportOpen(false)}
                         onImported={() => {
                             // Refresh students after import

@@ -246,7 +246,6 @@ export const exportService = {
     if (!students || students.length === 0) throw new Error('No student parsed from CSV');
     return students[0];
   },
-  ,
 
   // Import helpers (JSON format expected)
   importStudentJSON: (data: string | object): Student => {

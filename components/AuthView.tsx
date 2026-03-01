@@ -212,103 +212,97 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             </form>
           ) : (
             // Login Mode - Passcode Already Set
-            {!forgotFlow ? (
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 block">Passcode</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
-                  <input
-                    type="password"
-                    value={passcode}
-                    onChange={(e) => setPasscode(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleLoginSubmit(e as any)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-lg tracking-widest"
-                    placeholder="Enter passcode"
-                    autoFocus
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 mt-6 shadow-md"
-              >
-                Sign In <ArrowRight size={18} />
-              </button>
-              </form>
-            ) : null}
-
-            {/* Forgotten Passcode Flow */}
-            {forgotFlow ? (
-              <form onSubmit={handleForgotSubmit} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block">Recovery Question</label>
-                  <div className="mt-1 text-sm text-gray-600">{localStorageService.getRecoveryQuestion() || 'No recovery question set'}</div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 block">Your Answer</label>
-                  <input
-                    type="text"
-                    value={forgotAnswer}
-                    onChange={(e) => setForgotAnswer(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                    placeholder="Answer to recovery question"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 block">New Passcode</label>
-                  <input
-                    type="password"
-                    value={newPasscode}
-                    onChange={(e) => setNewPasscode(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                    placeholder="Enter new passcode"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700 block">Confirm New Passcode</label>
-                  <input
-                    type="password"
-                    value={newPasscodeConfirm}
-                    onChange={(e) => setNewPasscodeConfirm(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                    placeholder="Confirm new passcode"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setForgotFlow(false)}
-                    className="flex-1 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
-                  >
-                    Cancel
-                  </button>
+            <div>
+              {!forgotFlow ? (
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700 block">Passcode</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
+                      <input
+                        type="password"
+                        value={passcode}
+                        onChange={(e) => setPasscode(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleLoginSubmit(e as any)}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-lg tracking-widest"
+                        placeholder="Enter passcode"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 mt-6 shadow-md"
                   >
-                    Reset Passcode
+                    Sign In <ArrowRight size={18} />
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleForgotSubmit} className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block">Recovery Question</label>
+                    <div className="mt-1 text-sm text-gray-600">{localStorageService.getRecoveryQuestion() || 'No recovery question set'}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700 block">Your Answer</label>
+                    <input
+                      type="text"
+                      value={forgotAnswer}
+                      onChange={(e) => setForgotAnswer(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                      placeholder="Answer to recovery question"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700 block">New Passcode</label>
+                    <input
+                      type="password"
+                      value={newPasscode}
+                      onChange={(e) => setNewPasscode(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                      placeholder="Enter new passcode"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700 block">Confirm New Passcode</label>
+                    <input
+                      type="password"
+                      value={newPasscodeConfirm}
+                      onChange={(e) => setNewPasscodeConfirm(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                      placeholder="Confirm new passcode"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForgotFlow(false)}
+                      className="flex-1 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                    >
+                      Reset Passcode
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Forgotten link */}
+              {!forgotFlow && (
+                <div className="mt-3 text-center">
+                  <button
+                    onClick={() => setForgotFlow(true)}
+                    className="text-sm text-indigo-600 hover:underline"
+                  >
+                    Forgotten Passcode?
                   </button>
                 </div>
-              </form>
-            ) : null}
-
-            {/* Forgotten link */}
-            {!forgotFlow && (
-              <div className="mt-3 text-center">
-                <button
-                  onClick={() => setForgotFlow(true)}
-                  className="text-sm text-indigo-600 hover:underline"
-                >
-                  Forgotten Passcode?
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           )}
         </div>
       </div>
