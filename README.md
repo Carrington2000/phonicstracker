@@ -22,6 +22,12 @@ A 100% local, offline-capable reading assessment platform for elementary teacher
 - ✅ Class overview reports
 - ✅ 100% offline capable
 - ✅ Zero external dependencies
+
+## Bundled Teacher Resources
+
+- **Local PDFs:** This project includes two placeholder PDF assets in the `public/` folder: `word-lists.pdf` and `flashcards.pdf`.
+- **Replace with real files:** To use your official Word Lists and Flashcards, replace the placeholder files in `public/word-lists.pdf` and `public/flashcards.pdf` with the real PDFs (keep the same filenames).
+
 ```
 
 

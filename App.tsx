@@ -279,7 +279,7 @@ const App: React.FC = () => {
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Teacher Resources</p>
                 <div className="space-y-3">
                     <a
-                        href="https://docs.google.com/presentation/d/1vrRJf9vE7uOIpofzAYTm8rdfZwzhRYnj/edit?usp=sharing&ouid=112539120221518128339&rtpof=true&sd=true"
+                        href="/word-lists.pdf"
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-start gap-2 text-sm text-gray-600 hover:text-indigo-600 group"
@@ -288,7 +288,7 @@ const App: React.FC = () => {
                         <span>Download Word Lists</span>
                     </a>
                     <a
-                        href="https://docs.google.com/presentation/d/1e758EAlGGEDwpM00d1RHXDyDBIahm2bJ/edit?usp=sharing&ouid=112539120221518128339&rtpof=true&sd=true"
+                        href="/flashcards.pdf"
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-start gap-2 text-sm text-gray-600 hover:text-indigo-600 group"
