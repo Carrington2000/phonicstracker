@@ -1,5 +1,6 @@
 import { Student } from './types';
 import { PHONICS_DATA, HFW_SETS } from './constants';
+import { localStorageService } from './localStorageService';
 
 export const exportService = {
   // Export single student to CSV
@@ -145,5 +146,142 @@ export const exportService = {
   exportAndDownloadStudent: (student: Student): void => {
     const csv = exportService.exportStudentToCSV(student);
     exportService.downloadCSV(csv, `phonicstrack-${student.name.replace(/\s+/g, '-').toLowerCase()}.csv`);
+  }
+  ,
+
+  // JSON export helpers for exact round-trip
+  exportStudentToJSON: (student: Student): string => {
+    return JSON.stringify(student, null, 2);
+  },
+
+  exportAllStudentsToJSON: (students: Student[]): string => {
+    return JSON.stringify(students, null, 2);
+  },
+
+  downloadJSON: (jsonContent: string, filename: string): void => {
+    const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  },
+
+  exportAndDownloadAllStudentsJSON: (students: Student[]): void => {
+    const json = exportService.exportAllStudentsToJSON(students);
+    const timestamp = new Date().toISOString().split('T')[0];
+    exportService.downloadJSON(json, `phonicstrack-class-${timestamp}.json`);
+  },
+
+  exportAndDownloadStudentJSON: (student: Student): void => {
+    const json = exportService.exportStudentToJSON(student);
+    exportService.downloadJSON(json, `phonicstrack-${student.name.replace(/\s+/g, '-').toLowerCase()}.json`);
+  },
+
+  // CSV import helpers (expecting CSV format produced by this app)
+  importCSVClass: (csvText: string): Student[] => {
+    const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length < 2) throw new Error('CSV contains no data rows');
+
+    const headerLine = lines[0];
+    const parseLine = (line: string) => {
+      // split on commas not inside quotes
+      const parts = line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/);
+      return parts.map(p => p.replace(/^"|"$/g, '').replace(/""/g, '"'));
+    };
+
+    const headers = parseLine(headerLine);
+
+    const current = localStorageService.getCurrentUser();
+    if (!current) throw new Error('No active user');
+
+    const rows = lines.slice(1);
+    const studentsPayload: any[] = rows.map(row => {
+      const cells = parseLine(row);
+      const name = cells[0] || 'Imported Student';
+      const lastDateCell = cells[1] || '';
+      let lastAssessmentDate = new Date().toISOString();
+      const parsed = new Date(lastDateCell);
+      if (!isNaN(parsed.getTime())) {
+        lastAssessmentDate = parsed.toISOString();
+      }
+
+      const phonicsMastery: Record<string, boolean> = {};
+      PHONICS_DATA.forEach(category => {
+        category.skills.forEach(skill => {
+          const header = `${category.name} - ${skill.label}`;
+          const idx = headers.indexOf(header);
+          const val = idx >= 0 ? (cells[idx] || '') : '';
+          phonicsMastery[skill.id] = /✓|Mastered/i.test(val);
+        });
+      });
+
+      const hfwMastery: Record<string, boolean> = {};
+      HFW_SETS.forEach(set => {
+        set.words.forEach(word => {
+          const header = `${set.name} - ${word}`;
+          const idx = headers.indexOf(header);
+          const val = idx >= 0 ? (cells[idx] || '') : '';
+          hfwMastery[`${set.id}_${word}`] = /✓|Mastered/i.test(val);
+        });
+      });
+
+      return {
+        name,
+        lastAssessmentDate,
+        phonicsMastery,
+        hfwMastery,
+        userId: current.uid
+      };
+    });
+
+    return localStorageService.addMultipleStudents(studentsPayload);
+  },
+
+  importCSVStudent: (csvText: string): Student => {
+    const students = exportService.importCSVClass(csvText);
+    if (!students || students.length === 0) throw new Error('No student parsed from CSV');
+    return students[0];
+  },
+  ,
+
+  // Import helpers (JSON format expected)
+  importStudentJSON: (data: string | object): Student => {
+    let obj: any = typeof data === 'string' ? JSON.parse(data) : data;
+    if (!obj) throw new Error('Invalid student data');
+
+    const current = localStorageService.getCurrentUser();
+    if (!current) throw new Error('No active user');
+
+    const studentPayload: Omit<Student, 'id'> = {
+      name: obj.name || 'Imported Student',
+      lastAssessmentDate: obj.lastAssessmentDate || new Date().toISOString(),
+      phonicsMastery: obj.phonicsMastery || {},
+      hfwMastery: obj.hfwMastery || {},
+      userId: current.uid
+    };
+
+    return localStorageService.addStudent(studentPayload);
+  },
+
+  importClassJSON: (data: string | object[]): Student[] => {
+    const arr = typeof data === 'string' ? JSON.parse(data) : data;
+    if (!Array.isArray(arr)) throw new Error('Expected an array of students for class import');
+
+    const current = localStorageService.getCurrentUser();
+    if (!current) throw new Error('No active user');
+
+    const studentsPayload: Omit<Student, 'id'>[] = arr.map((obj: any) => ({
+      name: obj.name || 'Imported Student',
+      lastAssessmentDate: obj.lastAssessmentDate || new Date().toISOString(),
+      phonicsMastery: obj.phonicsMastery || {},
+      hfwMastery: obj.hfwMastery || {},
+      userId: current.uid
+    }));
+
+    return localStorageService.addMultipleStudents(studentsPayload);
   }
 };

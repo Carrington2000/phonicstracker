@@ -8,6 +8,7 @@ import AboutView from './components/AboutView';
 import AuthView from './components/AuthView';
 import { LayoutDashboard, Users, HelpCircle, GraduationCap, ArrowRight, Plus, FileText, X, Info, LogOut, User as UserIcon } from 'lucide-react';
 import { localStorageService } from './localStorageService';
+import ImportExport from './components/ImportExport';
 
 // --- MOCK DATA GENERATOR (can be removed if not needed) ---
 
@@ -49,6 +50,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+    const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -154,6 +156,19 @@ const App: React.FC = () => {
 
   // Find priority student (longest time since assessment)
   const priorityStudent = [...students].sort((a,b) => new Date(a.lastAssessmentDate).getTime() - new Date(b.lastAssessmentDate).getTime())[0];
+
+    // Open a PDF file either via Electron API (when available) or fallback to browser new tab
+    const openLocalPDF = (fileName: string, fallbackHref?: string) => {
+        const api = (window as any).electronAPI;
+        if (api && typeof api.openLocalFile === 'function') {
+            api.openLocalFile(fileName).catch(() => {
+                // fallback to browser if electron API fails
+                window.open(fallbackHref || `/${fileName}`, '_blank', 'noopener');
+            });
+        } else {
+            window.open(fallbackHref || `/${fileName}`, '_blank', 'noopener');
+        }
+    };
 
 
   if (isLoading) {
@@ -292,24 +307,27 @@ const App: React.FC = () => {
             <div className="pt-6 px-4">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Teacher Resources</p>
                 <div className="space-y-3">
-                    <a
-                        href="/word-lists.pdf"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-start gap-2 text-sm text-gray-600 hover:text-indigo-600 group"
+                    <button
+                        onClick={() => openLocalPDF('word-lists.pdf', '/word-lists.pdf')}
+                        className="w-full text-left flex items-start gap-2 text-sm text-gray-600 hover:text-indigo-600 group"
                     >
                         <FileText size={16} className="mt-0.5 group-hover:text-indigo-500" />
                         <span>Download Word Lists</span>
-                    </a>
-                    <a
-                        href="/flashcards.pdf"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-start gap-2 text-sm text-gray-600 hover:text-indigo-600 group"
+                    </button>
+                    <button
+                        onClick={() => openLocalPDF('flashcards.pdf', '/flashcards.pdf')}
+                        className="w-full text-left flex items-start gap-2 text-sm text-gray-600 hover:text-indigo-600 group"
                     >
                         <FileText size={16} className="mt-0.5 group-hover:text-indigo-500" />
                         <span>Download Flashcards</span>
-                    </a>
+                    </button>
+                    <button
+                        onClick={() => setIsImportExportOpen(true)}
+                        className="w-full text-left flex items-start gap-2 text-sm text-gray-600 hover:text-indigo-600 group"
+                    >
+                        <FileText size={16} className="mt-0.5 group-hover:text-indigo-500" />
+                        <span>Import / Export</span>
+                    </button>
                 </div>
             </div>
 
@@ -448,6 +466,23 @@ const App: React.FC = () => {
                 </div>
             </div>
         )}
+
+                {/* Import/Export Modal */}
+                {isImportExportOpen && (
+                    <ImportExport
+                        students={students}
+                        onClose={() => setIsImportExportOpen(false)}
+                        onImported={() => {
+                            // Refresh students after import
+                            const user = localStorageService.getCurrentUser();
+                            if (user) {
+                                const updated = localStorageService.getStudentsByUserId(user.uid);
+                                setStudents(updated);
+                            }
+                            setIsImportExportOpen(false);
+                        }}
+                    />
+                )}
 
       </main>
     </div>

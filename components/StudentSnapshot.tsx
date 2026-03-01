@@ -35,6 +35,10 @@ const StudentSnapshot: React.FC<Props> = ({ student, allStudents, onAssess, onDe
     };
   });
 
+  // Compute chart height dynamically based on number of categories to avoid cramping
+  const chartHeight = Math.min(700, Math.max(240, chartData.length * 28));
+  const CARD_MAX_HEIGHT = 720;
+
   // Determine Learning Goal (First unmastered skill)
   const getLearningGoal = () => {
     for (const category of PHONICS_DATA) {
@@ -193,9 +197,9 @@ const StudentSnapshot: React.FC<Props> = ({ student, allStudents, onAssess, onDe
         {/* Chart */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <h3 className="text-gray-800 font-bold mb-6">Code Mastery Profile</h3>
-            <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} layout="vertical" margin={{ left: 40 }}>
+            <div className="overflow-y-auto" style={{ maxHeight: CARD_MAX_HEIGHT }}>
+              <ResponsiveContainer width="100%" height={chartHeight}>
+                <BarChart data={chartData} layout="vertical" margin={{ left: 40 }}>
                         <XAxis type="number" domain={[0, 100]} hide />
                         <YAxis dataKey="name" type="category" width={60} tick={{fontSize: 12}} />
                         <Tooltip 
@@ -213,7 +217,7 @@ const StudentSnapshot: React.FC<Props> = ({ student, allStudents, onAssess, onDe
         </div>
 
         {/* Detailed Grid */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 overflow-y-auto max-h-[350px]">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 overflow-y-auto" style={{ maxHeight: CARD_MAX_HEIGHT }}>
             <h3 className="text-gray-800 font-bold mb-4">Skill Breakdown</h3>
             <div className="space-y-4">
                 {PHONICS_DATA.map(cat => (

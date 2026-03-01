@@ -11,6 +11,12 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
   const [teacherName, setTeacherName] = useState('');
   const [passcode, setPasscode] = useState('');
   const [passcodeConfirm, setPasscodeConfirm] = useState('');
+  const [recoveryQuestion, setRecoveryQuestion] = useState('');
+  const [recoveryAnswer, setRecoveryAnswer] = useState('');
+  const [forgotFlow, setForgotFlow] = useState(false);
+  const [forgotAnswer, setForgotAnswer] = useState('');
+  const [newPasscode, setNewPasscode] = useState('');
+  const [newPasscodeConfirm, setNewPasscodeConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -45,8 +51,13 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
       return;
     }
 
+    if (!recoveryQuestion.trim() || !recoveryAnswer.trim()) {
+      setError('Please provide a recovery question and answer');
+      return;
+    }
+
     try {
-      localStorageService.setPasscode(teacherName.trim(), passcode);
+      localStorageService.setPasscodeWithRecovery(teacherName.trim(), passcode, recoveryQuestion.trim(), recoveryAnswer.trim());
       window.location.reload();
     } catch (error: any) {
       setError(error.message);
@@ -64,6 +75,33 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
 
     try {
       localStorageService.login(passcode);
+      window.location.reload();
+    } catch (error: any) {
+      setError(error.message);
+    }
+  };
+
+  const handleForgotSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!forgotAnswer) {
+      setError('Please enter your recovery answer');
+      return;
+    }
+
+    if (!newPasscode || newPasscode.length < 4) {
+      setError('New passcode must be at least 4 characters');
+      return;
+    }
+
+    if (newPasscode !== newPasscodeConfirm) {
+      setError('New passcodes do not match');
+      return;
+    }
+
+    try {
+      localStorageService.resetPasscodeWithRecovery(forgotAnswer, newPasscode);
       window.location.reload();
     } catch (error: any) {
       setError(error.message);
@@ -143,6 +181,28 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
                 <p className="text-xs text-gray-500 mt-1">You'll use this passcode each time you sign in.</p>
               </div>
 
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 block">Recovery Question</label>
+                <input
+                  type="text"
+                  value={recoveryQuestion}
+                  onChange={(e) => setRecoveryQuestion(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  placeholder="e.g. What is your school mascot?"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700 block">Recovery Answer</label>
+                <input
+                  type="text"
+                  value={recoveryAnswer}
+                  onChange={(e) => setRecoveryAnswer(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  placeholder="Answer to your recovery question"
+                />
+              </div>
+
               <button
                 type="submit"
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 mt-6 shadow-md"
@@ -152,7 +212,8 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
             </form>
           ) : (
             // Login Mode - Passcode Already Set
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
+            {!forgotFlow ? (
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-gray-700 block">Passcode</label>
                 <div className="relative">
@@ -175,7 +236,79 @@ const AuthView: React.FC<AuthViewProps> = ({ onAuthSuccess }) => {
               >
                 Sign In <ArrowRight size={18} />
               </button>
-            </form>
+              </form>
+            ) : null}
+
+            {/* Forgotten Passcode Flow */}
+            {forgotFlow ? (
+              <form onSubmit={handleForgotSubmit} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block">Recovery Question</label>
+                  <div className="mt-1 text-sm text-gray-600">{localStorageService.getRecoveryQuestion() || 'No recovery question set'}</div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 block">Your Answer</label>
+                  <input
+                    type="text"
+                    value={forgotAnswer}
+                    onChange={(e) => setForgotAnswer(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Answer to recovery question"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 block">New Passcode</label>
+                  <input
+                    type="password"
+                    value={newPasscode}
+                    onChange={(e) => setNewPasscode(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Enter new passcode"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700 block">Confirm New Passcode</label>
+                  <input
+                    type="password"
+                    value={newPasscodeConfirm}
+                    onChange={(e) => setNewPasscodeConfirm(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder="Confirm new passcode"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForgotFlow(false)}
+                    className="flex-1 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                  >
+                    Reset Passcode
+                  </button>
+                </div>
+              </form>
+            ) : null}
+
+            {/* Forgotten link */}
+            {!forgotFlow && (
+              <div className="mt-3 text-center">
+                <button
+                  onClick={() => setForgotFlow(true)}
+                  className="text-sm text-indigo-600 hover:underline"
+                >
+                  Forgotten Passcode?
+                </button>
+              </div>
+            )}
           )}
         </div>
       </div>
